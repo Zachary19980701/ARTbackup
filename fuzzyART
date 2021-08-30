@@ -1,0 +1,75 @@
+R_node_num = 1
+art_weight = np.zeros((1 , 4))
+art_threshold = 0.8
+
+t = 0.1
+em_train_data = np.ones(6)
+em_node_num = 3
+em_weight = np.ones(6)
+em_threshold = 0.8
+
+def ARTcallback(data):
+    #pub_conmand = rospy.Publisher("conmand" , String  ,queue_size=10)
+
+    x = data.data[0] / 10
+    y = data.data[1] / 10
+    #z = data.data[2] / 10
+    #ox = data.data[3] / 3.14
+    #oy = data.data[4] / 3.14
+    oz = data.data[5] 
+    ow = data.data[6] 
+
+    fuzzy_num = 0
+    weight_and = 0
+    input_array = np.array([x , y , oz , ow])
+    #print(input_array)
+    global R_node_num
+    activate_num = np.zeros(R_node_num)
+    global art_weight
+    
+
+    for i in range(0 , R_node_num):
+        for j in range(4):
+            min_num = min(input_array[j] , art_weight[i , j])
+            min_num = abs(min_num)
+            fuzzy_num = fuzzy_num + min_num
+            weight_and = weight_and + abs(art_weight[i , j])
+        '''print(fuzzy_num)
+        #print(weight_and)'''
+        activate_num[i] = fuzzy_num / (1 + weight_and)
+    activate_node = np.argmax(activate_num)
+    '''print("jihuoshenjingyuan" + activate_node)
+    print("quanzhifenbuhanshu" + activate_num)
+    print("quanhzong xiangliang" + art_weight)
+    print("shenjingyuanshuliang" + R_node_num)
+    
+    print("jihuoquanzhong" + weight_activate)'''
+    weight_activate = art_weight[activate_node]
+
+    fuzzy_num = 0
+    weight_and = 0
+    for j in range(4):
+        min_num = min(input_array[j] , weight_activate[j])
+        min_num = abs(min_num)
+        #print(min_num)
+        fuzzy_num = fuzzy_num + min_num
+        #print(input_array[i])
+        weight_and = weight_and + abs(input_array[j])
+    
+    #global art_threshold
+    #print("weight_and" , weight_and)
+    #print("fuzzy" , fuzzy_num)
+    simlation = fuzzy_num / weight_and
+    print(simlation)
+
+    if(simlation > art_threshold):
+        
+        #art_weight(activate_node) = 0.7 * art_weight(weight_activate) +  0.3 *  input_data 
+        art_weight[activate_node] = 0.7 * art_weight[activate_node] + 0.3 * input_array
+        print("activate node %s" , activate_node)
+    else:
+        #global art_weight
+        art_weight = np.vstack([art_weight , input_array])
+        
+        R_node_num = R_node_num + 1
+        print("activate node " , R_node_num)

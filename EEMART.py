@@ -14,7 +14,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs import point_cloud2
 
 
-pre_position = np.array([0 , 0 , 0 , 0])
+pre_position = np.zeros((1 , 4))
 position_experience = np.zeros((1 , 4))
 image_save_path = "/home/zach/catkin_ws/save_image/"
 event_list = np.zeros(15)
@@ -25,8 +25,9 @@ EM_weight = np.ones((1 , 15))
 EM_node_num = 1
 EM_threshold = 0.8
 
-Episodic_memory = np.zeros(15)
-EM_MAP = np.zeros(2)
+Episodic_memory = np.zeros((1 , 15))
+EM_MAP = np.empty((1 , 2) , dtype = int)
+path = np.zeros((1 , 4))
 
 class CompareImage(object):
 
@@ -110,11 +111,14 @@ def EMcallback(data1 , data2 , data3):
     
     plan_node = []    
     now_position = np.array([x , y , oz , ow])
+    global path
+    path = np.vstack([path , now_position])
+    np.savetxt('/home/zach/catkin_ws/path' , path)
     #print(now_position)
     position_node = False
     global position_experience
     experience_num = np.shape(position_experience)[0]
-    print(experience_num)
+    #print(experience_num)
     save_list = np.array([])
 
     temp_img = "/home/zach/catkin_ws/save_image/temp_image.jpg"
@@ -151,16 +155,18 @@ def EMcallback(data1 , data2 , data3):
                 image_name = experience_num_1 + '.jpg'
                 cv2.imwrite(image_save_path + image_name , cv_img)
                 position_node = experience_num
-                
-
+                np.savetxt('/home/zach/catkin_ws/map' , position_experience)
+                #np.savetxt('/home/zach/catkin_ws/weight' , )
         
-        
+       
     #print(position_experience)
     print(position_node)
     global event_list
-
-    event_list_temp = event_list[0:13]
-    event_list[0:13] = event_list_temp
+    #print("ep" , event_list)
+    event_list_temp = event_list[1:]
+    #print("et" , event_list_temp)
+    event_list[:-1] = event_list_temp
+    #print("e" , event_list)
     event_list[14] = position_node
     fuzzy_num = 0
     weight_and = 0
@@ -196,19 +202,29 @@ def EMcallback(data1 , data2 , data3):
         EM_node_num = EM_node_num + 1
         global Episodic_memory
         #Episodic_memory[EM_node_num] = event_list
-        Episodic_memory = np.vstack((Episodic_memory , event_list))
+        #Episodic_memory = np.append((Episodic_memory , event_list))
+        #Episodic_memory.append(event_list)
+        #Episodic_memory = np.array(Episodic_memory)
+        Episodic_memory = np.vstack([Episodic_memory , event_list])
         print("new event list" , EM_node_num)
         episodic_flag = 1
-    
-    #print(position_experience)
 
+    np.savetxt('/home/zach/catkin_ws/memory' , Episodic_memory , fmt='%.0f') #
     #EM_length = np.shape(Episodic_memory)[0]
     #print(Episodic_memory)
+
+
     if(episodic_flag == 1):
         temp = 0
-        for i in range(EM_node_num):
-            for j in range(15):
-                temp = Episodic_memory[i , j]
+        event_length = np.shape(Episodic_memory)[0]
+        #print("shijianshu" , event_length)
+        em_length = np.shape(Episodic_memory)[1]
+        #print("shijianchangdu" , em_length)
+        if(em_length > 15):
+            em_length = 15
+        for i_1 in range(event_length):
+            for j_1 in range(em_length):
+                temp = Episodic_memory[i_1 , j_1]
                 temp = int(temp)
                 print(temp)
                 global EM_MAP
